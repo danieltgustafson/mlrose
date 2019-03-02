@@ -485,7 +485,7 @@ class NeuralNetwork:
         self.loss = np.inf
         self.output_activation = None
         self.predicted_probs = []
-
+        self.loss_curve=[]
     def fit(self, X, y, init_weights=None):
         """Fit neural network to data.
 
@@ -540,7 +540,7 @@ class NeuralNetwork:
             if init_weights is None:
                 init_weights = np.random.uniform(-1, 1, num_nodes)
 
-            fitted_weights, loss,self.loss_curve = random_hill_climb(
+            fitted_weights, loss, curve = random_hill_climb(
                 problem,
                 max_attempts=self.max_attempts, max_iters=self.max_iters,
                 restarts=0, init_state=init_weights,curve=True)
@@ -548,13 +548,13 @@ class NeuralNetwork:
         elif self.algorithm == 'simulated_annealing':
             if init_weights is None:
                 init_weights = np.random.uniform(-1, 1, num_nodes)
-            fitted_weights, loss, self.loss_curve = simulated_annealing(
+            fitted_weights, loss, curve = simulated_annealing(
                 problem,
                 schedule=self.schedule, max_attempts=self.max_attempts,
                 max_iters=self.max_iters, init_state=init_weights,curve=True)
 
         elif self.algorithm == 'genetic_alg':
-            fitted_weights, loss, self.loss_curve = genetic_alg(
+            fitted_weights, loss, curve = genetic_alg(
                 problem,
                 pop_size=self.pop_size, mutation_prob=self.mutation_prob,
                 max_attempts=self.max_attempts, max_iters=self.max_iters,curve=True)
@@ -562,7 +562,7 @@ class NeuralNetwork:
         else:  # Gradient descent case
             if init_weights is None:
                 init_weights = np.random.uniform(-1, 1, num_nodes)
-            fitted_weights, loss,self.loss_curve = gradient_descent(
+            fitted_weights, loss, curve = gradient_descent(
                 problem,
                 max_attempts=self.max_attempts, max_iters=self.max_iters,
                 init_state=init_weights,curve=True)
@@ -572,6 +572,7 @@ class NeuralNetwork:
         self.fitted_weights = fitted_weights
         self.loss = loss
         self.output_activation = fitness.get_output_activation()
+        self.loss_curve=curve
 
     def predict(self, X):
         """Use model to predict data labels for given feature array.
