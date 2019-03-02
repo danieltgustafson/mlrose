@@ -14,7 +14,7 @@ def readme():
         return _file.read()
 
 
-setup(name='mlrose_dg',
+setup(name='mlroseDG',
       version='1.0.1',
       description="MLROSe: Machine Learning, Randomized Optimization and"
       + " Search",
@@ -35,7 +35,7 @@ setup(name='mlrose_dg',
           "Topic :: Scientific/Engineering :: Mathematics",
           "Topic :: Software Development :: Libraries",
           "Topic :: Software Development :: Libraries :: Python Modules"],
-      packages=['mlrose'],
+      packages=['mlroseDG'],
       install_requires=['numpy', 'scipy', 'sklearn'],
       python_requires='>=3',
       zip_safe=False)
