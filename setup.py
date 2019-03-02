@@ -14,7 +14,7 @@ def readme():
         return _file.read()
 
 
-setup(name='mlrose',
+setup(name='mlrose_dg',
       version='1.0.1',
       description="MLROSe: Machine Learning, Randomized Optimization and"
       + " Search",
