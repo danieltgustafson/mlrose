@@ -540,32 +540,32 @@ class NeuralNetwork:
             if init_weights is None:
                 init_weights = np.random.uniform(-1, 1, num_nodes)
 
-            fitted_weights, loss = random_hill_climb(
+            fitted_weights, loss,self.loss_curve = random_hill_climb(
                 problem,
                 max_attempts=self.max_attempts, max_iters=self.max_iters,
-                restarts=0, init_state=init_weights)
+                restarts=0, init_state=init_weights,curve=True)
 
         elif self.algorithm == 'simulated_annealing':
             if init_weights is None:
                 init_weights = np.random.uniform(-1, 1, num_nodes)
-            fitted_weights, loss = simulated_annealing(
+            fitted_weights, loss, self.loss_curve = simulated_annealing(
                 problem,
                 schedule=self.schedule, max_attempts=self.max_attempts,
-                max_iters=self.max_iters, init_state=init_weights)
+                max_iters=self.max_iters, init_state=init_weights,curve=True)
 
         elif self.algorithm == 'genetic_alg':
-            fitted_weights, loss = genetic_alg(
+            fitted_weights, loss, self.loss_curve = genetic_alg(
                 problem,
                 pop_size=self.pop_size, mutation_prob=self.mutation_prob,
-                max_attempts=self.max_attempts, max_iters=self.max_iters)
+                max_attempts=self.max_attempts, max_iters=self.max_iters,curve=True)
 
         else:  # Gradient descent case
             if init_weights is None:
                 init_weights = np.random.uniform(-1, 1, num_nodes)
-            fitted_weights, loss = gradient_descent(
+            fitted_weights, loss,self.loss_curve = gradient_descent(
                 problem,
                 max_attempts=self.max_attempts, max_iters=self.max_iters,
-                init_state=init_weights)
+                init_state=init_weights,curve=True)
 
         # Save fitted weights and node list
         self.node_list = node_list
