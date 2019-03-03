@@ -4,7 +4,7 @@
 # License: BSD 3 clause
 
 import numpy as np
-
+import scipy
 
 def identity(x, deriv=False):
     """Linear activation function
@@ -74,7 +74,7 @@ def sigmoid(x, deriv=False):
     fx: array
         Value of activation function at x
     """
-    fx = 1/(1 + np.exp(-x))
+    fx = 1/(1 + scipy.special.expit(-x))
 
     if deriv:
         fx *= (1 - fx)
