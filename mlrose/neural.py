@@ -340,68 +340,58 @@ class NetworkWeights:
 
 class NeuralNetwork:
     """Class for defining neural network weights optimization problem.
-
     Parameters
     ----------
     hidden_nodes: list of ints
         List giving the number of nodes in each hidden layer.
-
     activation: string, default: 'relu'
         Activation function for each of the hidden layers. Must be one of:
         'identity', 'relu', 'sigmoid' or 'tanh'.
-
     algorithm: string, default: 'random_hill_climb'
         Algorithm used to find optimal network weights. Must be one
         of:'random_hill_climb', 'simulated_annealing', 'genetic_alg' or
         'gradient_descent'.
-
     max_iters: int, default: 100
         Maximum number of iterations used to fit the weights.
-
     bias: bool, default: True
         Whether to include a bias term.
-
     is_classifer: bool, default: True
         Whether the network is for classification or regression. Set
         :code:`True` for classification and :code:`False` for regression.
-
     learning_rate: float, default: 0.1
         Learning rate for gradient descent or step size for randomized
         optimization algorithms.
-
     early_stopping: bool, default: False
         Whether to terminate algorithm early if the loss is not improving.
         If :code:`True`, then stop after max_attempts iters with no
         improvement.
-
     clip_max: float, default: 1e+10
         Used to limit weights to the range [-1*clip_max, clip_max].
-
+    restarts: int, default: 0
+        Number of random restarts.
+        Only required if :code:`algorithm = 'random_hill_climb'`.
     schedule: schedule object, default = mlrose.GeomDecay()
         Schedule used to determine the value of the temperature parameter.
         Only required if :code:`algorithm = 'simulated_annealing'`.
-
     pop_size: int, default: 200
         Size of population. Only required if :code:`algorithm = 'genetic_alg'`.
-
     mutation_prob: float, default: 0.1
         Probability of a mutation at each element of the state vector during
         reproduction, expressed as a value between 0 and 1. Only required if
         :code:`algorithm = 'genetic_alg'`.
-
     max_attempts: int, default: 10
         Maximum number of attempts to find a better state. Only required if
         :code:`early_stopping = True`.
-
+    random_state: int, default: None
+        If random_state is a positive integer, random_state is the seed used
+        by np.random.seed(); otherwise, the random seed is not set.
     Attributes
     ----------
     fitted_weights: array
         Numpy array giving the fitted weights when :code:`fit` is performed.
-
     loss: float
         Value of loss function for fitted weights when :code:`fit` is
         performed.
-
     predicted_probs: array
         Numpy array giving the predicted probabilities for each class when
         :code:`predict` is performed for multi-class classification data; or
@@ -412,8 +402,9 @@ class NeuralNetwork:
     def __init__(self, hidden_nodes, activation='relu',
                  algorithm='random_hill_climb', max_iters=100, bias=True,
                  is_classifier=True, learning_rate=0.1, early_stopping=False,
-                 clip_max=1e+10, schedule=GeomDecay(), pop_size=200,
-                 mutation_prob=0.1, max_attempts=10):
+                 clip_max=1e+10, restarts=0, schedule=GeomDecay(),
+                 pop_size=200, mutation_prob=0.1, max_attempts=10,
+                 random_state=None):
 
         if (not isinstance(max_iters, int) and max_iters != np.inf
                 and not max_iters.is_integer()) or (max_iters < 0):
@@ -456,9 +447,11 @@ class NeuralNetwork:
         self.lr = learning_rate
         self.early_stopping = early_stopping
         self.clip_max = clip_max
+        self.restarts = restarts
         self.schedule = schedule
         self.pop_size = pop_size
         self.mutation_prob = mutation_prob
+        self.random_state = random_state
 
         activation_dict = {'identity': identity, 'relu': relu,
                            'sigmoid': sigmoid, 'tanh': tanh}
@@ -485,20 +478,17 @@ class NeuralNetwork:
         self.loss = np.inf
         self.output_activation = None
         self.predicted_probs = []
-        self.loss_curve=[]
-    def fit(self, X, y, init_weights=None,seed=None):
+        self.loss_curves = []
+    def fit(self, X, y, init_weights=None):
         """Fit neural network to data.
-
         Parameters
         ----------
         X: array
             Numpy array containing feature dataset with each row
             representing a single observation.
-
         y: array
             Numpy array containing data labels. Length must be same as
             length of X.
-
         init_state: array, default: None
             Numpy array containing starting weights for algorithm.
             If :code:`None`, then a random state is used.
@@ -527,8 +517,11 @@ class NeuralNetwork:
         if init_weights is not None and len(init_weights) != num_nodes:
             raise Exception("""init_weights must be None or have length %d"""
                             % (num_nodes,))
-        if seed:
-            np.random.set_seed(seed)
+
+        # Set random seed
+        if isinstance(self.random_state, int) and self.random_state > 0:
+            np.random.seed(self.random_state)
+
         # Initialize optimization problem
         fitness = NetworkWeights(X, y, node_list, self.activation, self.bias,
                                  self.is_classifier, learning_rate=self.lr)
@@ -538,13 +531,24 @@ class NeuralNetwork:
                                 max_val=self.clip_max, step=self.lr)
 
         if self.algorithm == 'random_hill_climb':
-            if init_weights is None:
-                init_weights = np.random.uniform(-1, 1, num_nodes)
+            fitted_weights = None
+            loss = np.inf
 
-            fitted_weights, loss, curve = random_hill_climb(
-                problem,
-                max_attempts=self.max_attempts, max_iters=self.max_iters,
-                restarts=0, init_state=init_weights,curve=True)
+            # Can't use restart feature of random_hill_climb function, since
+            # want to keep initial weights in the range -1 to 1.
+            for _ in range(self.restarts + 1):
+                if init_weights is None:
+                    init_weights = np.random.uniform(-1, 1, num_nodes)
+                
+                current_weights, current_loss,cur_curve = random_hill_climb(
+                    problem,
+                    max_attempts=self.max_attempts, max_iters=self.max_iters,
+                    restarts=0, curve=True,init_state=init_weights)
+
+                if current_loss < loss:
+                    fitted_weights = current_weights
+                    loss = current_loss
+                    curve = cur_curve
 
         elif self.algorithm == 'simulated_annealing':
             if init_weights is None:
