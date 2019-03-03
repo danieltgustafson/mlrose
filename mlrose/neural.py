@@ -486,7 +486,7 @@ class NeuralNetwork:
         self.output_activation = None
         self.predicted_probs = []
         self.loss_curve=[]
-    def fit(self, X, y, init_weights=None):
+    def fit(self, X, y, init_weights=None,seed=None):
         """Fit neural network to data.
 
         Parameters
@@ -527,7 +527,8 @@ class NeuralNetwork:
         if init_weights is not None and len(init_weights) != num_nodes:
             raise Exception("""init_weights must be None or have length %d"""
                             % (num_nodes,))
-
+        if seed:
+            np.random.set_seed(seed)
         # Initialize optimization problem
         fitness = NetworkWeights(X, y, node_list, self.activation, self.bias,
                                  self.is_classifier, learning_rate=self.lr)
